@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projectile Motion Simulator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .container {
+            width: 800px;
+            max-width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            background-color: white;
+            padding: 20px;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .value-display {
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        button {
+            grid-column: 1 / -1;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .simulation-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        
+        .simulation {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 60%, #8fbc8f 60%, #8fbc8f 100%);
+            overflow: hidden;
+        }
+        
+        .projectile {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: #e74c3c;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            transform: translate(0, 0);
+            left: 10px;
+            bottom: 0;
+            z-index: 3;
+        }
+        
+        .trajectory {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background-color: rgba(231, 76, 60, 0.3);
+            border-radius: 50%;
+            z-index: 2;
+        }
+        
+        .stats {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #3498db;
+            font-size: 1.2em;
+        }
+        
+        .reset-btn {
+            background-color: #95a5a6;
+            margin-top: 15px;
+        }
+        
+        .reset-btn:hover {
+            background-color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Projectile Motion Simulator</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="angle-range">Angle</label>
+                <input type="range" id="angle-range" min="0" max="90" value="45" step="1">
+                <div>
+                    <input type="number" id="angle" value="45" min="0" max="90">°
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="velocity-range">Velocity</label>
+                <input type="range" id="velocity-range" min="10" max="100" value="50" step="1">
+                <div>
+                    <input type="number" id="velocity" value="50" min="10" max="100"> m/s
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="gravity-range">Gravity</label>
+                <input type="range" id="gravity-range" min="1" max="20" value="9.8" step="0.1">
+                <div>
+                    <input type="number" id="gravity" value="9.8" min="1" max="20" step="0.1"> m/s²
+                </div>
+            </div>
+            
+            <button id="launch-btn" onclick="launchProjectile()">Launch Projectile</button>
+            <button id="reset-btn" class="reset-btn" onclick="resetSimulation()">Reset</button>
+        </div>
+        
+        <div class="simulation-container">
+            <div class="simulation" id="simulation">
+                <div class="projectile" id="projectile"></div>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Max Height</div>
+                <div class="stat-value" id="max-height">0.00 m</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Range</div>
+                <div class="stat-value" id="range">0.00 m</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Flight Time</div>
+                <div class="stat-value" id="flight-time">0.00 s</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sync range sliders with number inputs
+        document.getElementById('angle-range').addEventListener('input', function() {
+            document.getElementById('angle').value = this.value;
+        });
+        
+        document.getElementById('velocity-range').addEventListener('input', function() {
+            document.getElementById('velocity').value = this.value;
+        });
+        
+        document.getElementById('gravity-range').addEventListener('input', function() {
+            document.getElementById('gravity').value = this.value;
+        });
+        
+        document.getElementById('angle').addEventListener('input', function() {
+            document.getElementById('angle-range').value = this.value;
+        });
+        
+        document.getElementById('velocity').addEventListener('input', function() {
+            document.getElementById('velocity-range').value = this.value;
+        });
+        
+        document.getElementById('gravity').addEventListener('input', function() {
+            document.getElementById('gravity-range').value = this.value;
+        });
+        
+        // Scale factor for conversion between pixels and meters
+        const SCALE_FACTOR = 5;
+        const simulationWidth = document.getElementById('simulation').clientWidth;
+        const simulationHeight = document.getElementById('simulation').clientHeight;
+        
+        let trajectoryPoints = [];
+        let animationInterval;
+        let maxHeight = 0;
+        let maxRange = 0;
+        let flightDuration = 0;
+        
+        function resetSimulation() {
+            if (animationInterval) {
+                clearInterval(animationInterval);
+            }
+            
+            // Clear trajectory points
+            trajectoryPoints.forEach(point => {
+                if (point.parentNode) {
+                    point.parentNode.removeChild(point);
+                }
+            });
+            trajectoryPoints = [];
+            
+            // Reset projectile position
+            const projectile = document.getElementById('projectile');
+            projectile.style.transform = 'translate(0px, 0px)';
+            
+            // Reset stats
+            document.getElementById('max-height').textContent = '0.00 m';
+            document.getElementById('range').textContent = '0.00 m';
+            document.getElementById('flight-time').textContent = '0.00 s';
+            
+            // Re-enable launch button
+            document.getElementById('launch-btn').disabled = false;
+            
+            maxHeight = 0;
+            maxRange = 0;
+            flightDuration = 0;
+        }
+        
+        function addTrajectoryPoint(x, y) {
+            const simulation = document.getElementById('simulation');
+            const point = document.createElement('div');
+            point.className = 'trajectory';
+            point.style.left = `${x}px`;
+            point.style.bottom = `${y}px`;
+            simulation.appendChild(point);
+            trajectoryPoints.push(point);
+        }
+        
+        function calculateStats(angle, velocity, gravity) {
+            // Convert angle to radians
+            const angleRad = angle * (Math.PI / 180);
+            
+            // Calculate maximum height (h = v₀²sin²θ / 2g)
+            const maxHeightCalc = (velocity * velocity * Math.sin(angleRad) * Math.sin(angleRad)) / (2 * gravity);
+            
+            // Calculate range (R = v₀²sin2θ / g)
+            const rangeCalc = (velocity * velocity * Math.sin(2 * angleRad)) / gravity;
+            
+            // Calculate flight time (t = 2v₀sinθ / g)
+            const flightTimeCalc = (2 * velocity * Math.sin(angleRad)) / gravity;
+            
+            return {
+                maxHeight: maxHeightCalc,
+                range: rangeCalc,
+                flightTime: flightTimeCalc
+            };
+        }
+        
+        function updateStatsDisplay() {
+            document.getElementById('max-height').textContent = maxHeight.toFixed(2) + ' m';
+            document.getElementById('range').textContent = maxRange.toFixed(2) + ' m';
+            document.getElementById('flight-time').textContent = flightDuration.toFixed(2) + ' s';
+        }
+        
+        function launchProjectile() {
+            // Disable launch button during animation
+            document.getElementById('launch-btn').disabled = true;
+            
+            // Clear previous simulation
+            resetSimulation();
+            
+            const angle = parseFloat(document.getElementById('angle').value);
+            const velocity = parseFloat(document.getElementById('velocity').value);
+            const gravity = parseFloat(document.getElementById('gravity').value);
+            
+            // Calculate theoretical values
+            const stats = calculateStats(angle, velocity, gravity);
+            
+            // Convert angle to radians
+            const angleRad = angle * (Math.PI / 180);
+            const projectile = document.getElementById('projectile');
+            
+            let time = 0;
+            const timeStep = 0.05; // seconds per frame
+            
+            // Pre-calculate the entire trajectory
+            const trajectory = [];
+            let currentTime = 0;
+            let landingTime = 0;
+            let landingX = 0;
+            let highestY = 0;
+            
+            while (true) {
+                const x = velocity * currentTime * Math.cos(angleRad);
+                const y = velocity * currentTime * Math.sin(angleRad) - 0.5 * gravity * currentTime * currentTime;
+                
+                if (y < 0) {
+                    landingTime = currentTime;
+                    landingX = x;
+                    break;
+                }
+                
+                if (y > highestY) {
+                    highestY = y;
+                }
+                
+                trajectory.push({ x, y, time: currentTime });
+                currentTime += timeStep;
+            }
+            
+            // Update stats with calculated values
+            maxHeight = highestY;
+            maxRange = landingX;
+            flightDuration = landingTime;
+            updateStatsDisplay();
+            
+            // Draw the animation
+            animationInterval = setInterval(() => {
+                time += timeStep;
+                
+                // Calculate position
+                const x = velocity * time * Math.cos(angleRad);
+                const y = velocity * time * Math.sin(angleRad) - 0.5 * gravity * time * time;
+                
+                // Scale for display
+                const displayX = x * SCALE_FACTOR;
+                const displayY = y * SCALE_FACTOR;
+                
+                if (y < 0) {
+                    clearInterval(animationInterval);
+                    // Re-enable launch button
+                    document.getElementById('launch-btn').disabled = false;
+                    return;
+                }
+                
+                // Add trajectory point
+                addTrajectoryPoint(displayX + 10, displayY);
+                
+                // Update projectile position (add 10px offset from left)
+                projectile.style.transform = `translate(${displayX}px, ${-displayY}px)`;
+            }, 50);
+        }
+    </script>
+</body>
+</html>
